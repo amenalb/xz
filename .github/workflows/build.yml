@@ -1,0 +1,51 @@
+name: Build XZ Utils on ino_dev
+
+on:
+  push:
+    branches:
+      - ino_dev
+  pull_request:
+    branches:
+      - ino_dev
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake libtool make gcc
+
+      - name: Prepare build system
+        run: |
+          ./autogen.sh
+          ./configure --enable-shared
+
+      - name: Build project
+        run: make -j$(nproc)
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: xz-binaries
+          path: src/xz/xz
+
+  # Opcjonalna analiza statyczna, jeśli build jest zbyt zasobożerny
+  code_quality:
+    runs-on: ubuntu-latest
+    if: ${{ false }}  # Zmień na true, jeśli chcesz uruchomić analizę
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install cppcheck
+        run: sudo apt-get update && sudo apt-get install -y cppcheck
+
+      - name: Run cppcheck
+        run: cppcheck --enable=all --inconclusive --quiet --std=c99 src/
